@@ -1,0 +1,428 @@
+openapi: 3.0.0
+info:
+  title: Physical AI & Humanoid Robotics Book API
+  description: API for accessing and managing educational content in the Physical AI & Humanoid Robotics book
+  version: 1.0.0
+servers:
+  - url: https://api.physical-ai-book.com/v1
+    description: Production server
+  - url: https://staging.physical-ai-book.com/v1
+    description: Staging server
+
+paths:
+  /modules:
+    get:
+      summary: List all course modules
+      description: Retrieve a list of all course modules with basic information
+      responses:
+        '200':
+          description: List of modules
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  modules:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Module'
+        '500':
+          description: Internal server error
+
+  /modules/{moduleId}:
+    get:
+      summary: Get module details
+      description: Retrieve detailed information about a specific module
+      parameters:
+        - name: moduleId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Unique identifier of the module
+      responses:
+        '200':
+          description: Module details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Module'
+        '404':
+          description: Module not found
+        '500':
+          description: Internal server error
+
+  /modules/{moduleId}/weeks:
+    get:
+      summary: List weeks in a module
+      description: Retrieve a list of weeks within a specific module
+      parameters:
+        - name: moduleId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Unique identifier of the module
+      responses:
+        '200':
+          description: List of weeks in the module
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  weeks:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Week'
+        '404':
+          description: Module not found
+        '500':
+          description: Internal server error
+
+  /weeks/{weekId}:
+    get:
+      summary: Get week details
+      description: Retrieve detailed information about a specific week
+      parameters:
+        - name: weekId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Unique identifier of the week
+      responses:
+        '200':
+          description: Week details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Week'
+        '404':
+          description: Week not found
+        '500':
+          description: Internal server error
+
+  /topics/{topicId}:
+    get:
+      summary: Get topic details
+      description: Retrieve detailed information about a specific topic
+      parameters:
+        - name: topicId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Unique identifier of the topic
+      responses:
+        '200':
+          description: Topic details with MDX content
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Topic'
+        '404':
+          description: Topic not found
+        '500':
+          description: Internal server error
+
+  /exercises/{exerciseId}:
+    get:
+      summary: Get exercise details
+      description: Retrieve detailed information about a specific practical exercise
+      parameters:
+        - name: exerciseId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Unique identifier of the exercise
+      responses:
+        '200':
+          description: Exercise details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Exercise'
+        '404':
+          description: Exercise not found
+        '500':
+          description: Internal server error
+
+components:
+  schemas:
+    Module:
+      type: object
+      required:
+        - id
+        - name
+        - description
+        - order
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the module
+        name:
+          type: string
+          description: Name of the module
+        description:
+          type: string
+          description: Brief description of the module
+        weeks:
+          type: array
+          items:
+            $ref: '#/components/schemas/Week'
+          description: List of weeks in this module
+        learningObjectives:
+          type: array
+          items:
+            type: string
+          description: Learning objectives for the module
+        prerequisites:
+          type: array
+          items:
+            type: string
+          description: Prerequisites needed for this module
+        tags:
+          type: array
+          items:
+            type: string
+          description: Tags for categorization and search
+        order:
+          type: integer
+          description: Order in which the module appears
+        createdAt:
+          type: string
+          format: date-time
+          description: When the module was created
+        updatedAt:
+          type: string
+          format: date-time
+          description: When the module was last updated
+
+    Week:
+      type: object
+      required:
+        - id
+        - name
+        - description
+        - order
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the week
+        name:
+          type: string
+          description: Name of the week
+        description:
+          type: string
+          description: Brief description of the week's content
+        topics:
+          type: array
+          items:
+            $ref: '#/components/schemas/Topic'
+          description: List of topics in this week
+        practicalExercises:
+          type: array
+          items:
+            $ref: '#/components/schemas/Exercise'
+          description: List of practical exercises for this week
+        learningObjectives:
+          type: array
+          items:
+            type: string
+          description: Learning objectives for the week
+        duration:
+          type: string
+          description: Estimated time to complete (e.g., "4-6 hours")
+        order:
+          type: integer
+          description: Order in which the week appears within the module
+        createdAt:
+          type: string
+          format: date-time
+          description: When the week was created
+        updatedAt:
+          type: string
+          format: date-time
+          description: When the week was last updated
+
+    Topic:
+      type: object
+      required:
+        - id
+        - title
+        - content
+        - order
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the topic
+        title:
+          type: string
+          description: Title of the topic
+        content:
+          type: string
+          description: MDX content for the topic
+        learningObjectives:
+          type: array
+          items:
+            type: string
+          description: Learning objectives for the topic
+        diagrams:
+          type: array
+          items:
+            $ref: '#/components/schemas/Diagram'
+          description: Diagrams associated with the topic
+        codeExamples:
+          type: array
+          items:
+            $ref: '#/components/schemas/CodeExample'
+          description: Code examples in the topic
+        references:
+          type: array
+          items:
+            type: string
+          description: References and further reading
+        tags:
+          type: array
+          items:
+            type: string
+          description: Tags for categorization and search
+        order:
+          type: integer
+          description: Order in which the topic appears within the week
+        createdAt:
+          type: string
+          format: date-time
+          description: When the topic was created
+        updatedAt:
+          type: string
+          format: date-time
+          description: When the topic was last updated
+
+    Exercise:
+      type: object
+      required:
+        - id
+        - title
+        - description
+        - type
+        - difficulty
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the exercise
+        title:
+          type: string
+          description: Title of the exercise
+        description:
+          type: string
+          description: Detailed description of the exercise
+        type:
+          type: string
+          enum: [simulation, hardware, theoretical]
+          description: Type of exercise
+        difficulty:
+          type: string
+          enum: [beginner, intermediate, advanced]
+          description: Difficulty level
+        estimatedTime:
+          type: string
+          description: Estimated time to complete the exercise
+        instructions:
+          type: string
+          description: Step-by-step instructions in MDX format
+        requirements:
+          type: array
+          items:
+            type: string
+          description: Prerequisites for the exercise
+        expectedOutcome:
+          type: string
+          description: What the user should achieve
+        simulationEnvironment:
+          type: string
+          description: Required simulation environment (if applicable)
+        createdAt:
+          type: string
+          format: date-time
+          description: When the exercise was created
+        updatedAt:
+          type: string
+          format: date-time
+          description: When the exercise was last updated
+
+    Diagram:
+      type: object
+      required:
+        - id
+        - title
+        - type
+        - content
+        - altText
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the diagram
+        title:
+          type: string
+          description: Title of the diagram
+        description:
+          type: string
+          description: Description of what the diagram illustrates
+        type:
+          type: string
+          enum: [mermaid, image, svg]
+          description: Type of diagram
+        content:
+          type: string
+          description: Diagram content (Mermaid code, image path, etc.)
+        altText:
+          type: string
+          description: Alternative text for accessibility
+        createdAt:
+          type: string
+          format: date-time
+          description: When the diagram was created
+        updatedAt:
+          type: string
+          format: date-time
+          description: When the diagram was last updated
+
+    CodeExample:
+      type: object
+      required:
+        - id
+        - language
+        - code
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the code example
+        title:
+          type: string
+          description: Title of the code example
+        language:
+          type: string
+          description: Programming language
+        code:
+          type: string
+          description: The actual code content
+        description:
+          type: string
+          description: Explanation of what the code does
+        usage:
+          type: string
+          description: How to use the code example
+        simulationEnvironment:
+          type: string
+          description: Required simulation environment (if applicable)
+        createdAt:
+          type: string
+          format: date-time
+          description: When the code example was created
+        updatedAt:
+          type: string
+          format: date-time
+          description: When the code example was last updated

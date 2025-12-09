@@ -1,0 +1,428 @@
+---
+title: Week 7 - Advanced Simulation and Unity Visualization
+description: Advanced Gazebo features, Unity robotics integration, and sensor fusion in simulation
+tags: [gazebo-advanced, unity-robotics, sensor-fusion, simulation]
+---
+
+# Week 7 - Advanced Simulation and Unity Visualization
+
+In this second week of Module 2, we'll dive deeper into advanced simulation techniques and explore Unity's capabilities for robotics visualization and development.
+
+## Learning Objectives
+
+By the end of this week, you will be able to:
+- Implement advanced physics simulation features
+- Integrate Unity with ROS2 for robotics applications
+- Perform sensor fusion in simulation environments
+- Create realistic sensor models with noise and uncertainty
+- Design complex simulation scenarios for testing
+
+## 1. Advanced Gazebo Features
+
+### Custom Physics Plugins
+
+Gazebo allows custom physics plugins to implement specialized behaviors:
+
+```cpp
+// Example custom physics plugin
+#include <gazebo/gazebo.hh>
+#include <gazebo/physics/physics.hh>
+
+namespace gazebo
+{
+  class CustomPhysicsPlugin : public WorldPlugin
+  {
+    public: void Load(physics::WorldPtr _world, sdf::ElementPtr _sdf)
+    {
+      // Custom physics implementation
+      this->world = _world;
+      this->updateConnection = event::Events::ConnectWorldUpdateBegin(
+          std::bind(&CustomPhysicsPlugin::OnUpdate, this));
+    }
+
+    public: void OnUpdate()
+    {
+      // Custom physics update logic
+    }
+
+    private: physics::WorldPtr world;
+    private: event::ConnectionPtr updateConnection;
+  };
+
+  GZ_REGISTER_WORLD_PLUGIN(CustomPhysicsPlugin)
+}
+```
+
+### Sensor Noise Models
+
+Realistic sensor simulation includes noise and uncertainty:
+
+```xml
+<sensor name="camera_with_noise" type="camera">
+  <camera>
+    <!-- Camera configuration -->
+  </camera>
+  <noise>
+    <type>gaussian</type>
+    <mean>0.0</mean>
+    <stddev>0.007</stddev>
+  </noise>
+</sensor>
+```
+
+### Performance Optimization
+
+- **Level of Detail (LOD)**: Reduce complexity at distance
+- **Multi-threading**: Use Gazebo's multi-threaded physics
+- **Selective updates**: Update only necessary components
+- **GPU acceleration**: Utilize graphics hardware for physics
+
+## 2. Unity Robotics Integration
+
+### Unity Robotics Hub
+
+The Unity Robotics Hub provides tools for robotics simulation:
+
+```csharp
+// Example Unity robot controller
+using UnityEngine;
+using Unity.Robotics.ROSTCPConnector;
+using RosMessageTypes.Std;
+
+public class RobotController : MonoBehaviour
+{
+    ROSConnection ros;
+    public string topicName = "robot_velocity";
+
+    // Robot parameters
+    public float linearVelocity = 1.0f;
+    public float angularVelocity = 1.0f;
+
+    void Start()
+    {
+        ros = ROSConnection.instance;
+    }
+
+    void Update()
+    {
+        // Publish robot velocity commands
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
+            var velocityMsg = new Unity.RosMessageTypes.Geometry.TwistMsg(
+                new Unity.RosMessageTypes.Geometry.Vector3Msg(linearVelocity, 0, 0),
+                new Unity.RosMessageTypes.Geometry.Vector3Msg(0, 0, angularVelocity)
+            );
+
+            ros.Send(topicName, velocityMsg);
+        }
+    }
+}
+```
+
+### Unity-Rosbridge Integration
+
+Unity can connect to ROS2 through rosbridge:
+
+```javascript
+// Example JavaScript for Unity-ROS communication
+var ros = new ROSLIB.Ros({
+    url: 'ws://localhost:9090'
+});
+
+// Subscribe to a topic
+var listener = new ROSLIB.Topic({
+    ros: ros,
+    name: '/sensor_data',
+    messageType: 'sensor_msgs/LaserScan'
+});
+
+listener.subscribe(function(message) {
+    console.log('Received message on ' + listener.name + ': ' + message.ranges);
+});
+```
+
+## 3. Sensor Fusion in Simulation
+
+### Kalman Filtering
+
+Simulated sensors can be combined using Kalman filtering:
+
+```python
+import numpy as np
+from scipy.linalg import block_diag
+
+class SensorFusion:
+    def __init__(self):
+        # State: [x, y, vx, vy]
+        self.state = np.zeros(4)
+        self.covariance = np.eye(4) * 1000  # Initial uncertainty
+
+    def predict(self, dt, control_input):
+        """Predict state forward in time"""
+        # State transition matrix
+        F = np.array([
+            [1, 0, dt, 0],
+            [0, 1, 0, dt],
+            [0, 0, 1, 0],
+            [0, 0, 0, 1]
+        ])
+
+        # Control input matrix
+        B = np.array([
+            [0.5 * dt**2, 0],
+            [0, 0.5 * dt**2],
+            [dt, 0],
+            [0, dt]
+        ])
+
+        # Predict state
+        self.state = F @ self.state + B @ control_input
+
+        # Predict covariance
+        Q = np.eye(4) * 0.1  # Process noise
+        self.covariance = F @ self.covariance @ F.T + Q
+
+    def update(self, measurement, sensor_type):
+        """Update state with measurement"""
+        if sensor_type == "camera":
+            # Camera provides position measurement
+            H = np.array([[1, 0, 0, 0], [0, 1, 0, 0]])  # Position only
+            R = np.eye(2) * 0.1  # Camera measurement noise
+            innovation = measurement - H @ self.state
+        elif sensor_type == "imu":
+            # IMU provides velocity measurement
+            H = np.array([[0, 0, 1, 0], [0, 0, 0, 1]])  # Velocity only
+            R = np.eye(2) * 0.05  # IMU measurement noise
+            innovation = measurement - H @ self.state
+
+        # Kalman gain
+        S = H @ self.covariance @ H.T + R
+        K = self.covariance @ H.T @ np.linalg.inv(S)
+
+        # Update state and covariance
+        self.state = self.state + K @ innovation
+        I = np.eye(len(self.state))
+        self.covariance = (I - K @ H) @ self.covariance
+```
+
+### Particle Filtering for Non-linear Systems
+
+For non-linear systems, particle filtering can be more appropriate:
+
+```python
+class ParticleFilter:
+    def __init__(self, num_particles=1000):
+        self.particles = np.random.uniform(-10, 10, (num_particles, 4))
+        self.weights = np.ones(num_particles) / num_particles
+
+    def predict(self, dt, process_noise):
+        """Predict particle motion"""
+        # Add motion model with noise
+        self.particles[:, 2:] += np.random.normal(0, process_noise, (len(self.particles), 2)) * dt
+        self.particles[:, :2] += self.particles[:, 2:] * dt
+
+    def update(self, measurement, measurement_noise):
+        """Update particle weights based on measurement"""
+        # Calculate likelihood of each particle
+        diff = self.particles[:, :2] - measurement[:2]
+        distances = np.sum(diff**2, axis=1)
+
+        # Update weights based on likelihood
+        likelihood = np.exp(-distances / (2 * measurement_noise**2))
+        self.weights *= likelihood
+        self.weights += 1e-300  # Avoid zero weights
+        self.weights /= np.sum(self.weights)  # Normalize
+```
+
+## 4. Realistic Sensor Modeling
+
+### Camera Sensor with Distortion
+
+Simulate realistic camera behavior with distortion:
+
+```xml
+<sensor name="camera_distorted" type="camera">
+  <camera>
+    <horizontal_fov>1.047</horizontal_fov>
+    <image>
+      <width>640</width>
+      <height>480</height>
+      <format>R8G8B8</format>
+    </image>
+    <distortion>
+      <k1>-0.1</k1>
+      <k2>0.05</k2>
+      <k3>-0.001</k3>
+      <p1>0.001</p1>
+      <p2>0.002</p2>
+      <center>0.5 0.5</center>
+    </distortion>
+  </camera>
+</sensor>
+```
+
+### Multi-sensor Environments
+
+Create complex environments with multiple robots and sensors:
+
+```xml
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <world name="multi_robot_world">
+    <!-- Environment -->
+    <include>
+      <uri>model://ground_plane</uri>
+    </include>
+    <include>
+      <uri>model://sun</uri>
+    </include>
+
+    <!-- Robot 1 -->
+    <include>
+      <uri>model://turtlebot3_burger</uri>
+      <pose>0 0 0 0 0 0</pose>
+    </include>
+
+    <!-- Robot 2 -->
+    <include>
+      <uri>model://turtlebot3_burger</uri>
+      <pose>2 0 0 0 0 0</pose>
+    </include>
+
+    <!-- Obstacles -->
+    <model name="obstacle_1">
+      <pose>1 1 0.5 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <box><size>0.5 0.5 1.0</size></box>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <box><size>0.5 0.5 1.0</size></box>
+          </geometry>
+          <material><ambient>1 0 0 1</ambient></material>
+        </visual>
+      </link>
+    </model>
+  </world>
+</sdf>
+```
+
+## 5. Simulation Testing and Validation
+
+### Automated Testing Frameworks
+
+```python
+import unittest
+import rclpy
+from rclpy.node import Node
+from sensor_msgs.msg import LaserScan
+from geometry_msgs.msg import Twist
+
+class SimulationTestNode(Node):
+    def __init__(self):
+        super().__init__('simulation_tester')
+
+        # Publishers and subscribers for testing
+        self.cmd_vel_pub = self.create_publisher(Twist, '/robot/cmd_vel', 10)
+        self.scan_sub = self.create_subscription(LaserScan, '/robot/laser_scan',
+                                                 self.scan_callback, 10)
+
+        self.scan_data = None
+
+    def scan_callback(self, msg):
+        self.scan_data = msg.ranges
+
+class TestRobotNavigation(unittest.TestCase):
+    def setUp(self):
+        rclpy.init()
+        self.node = SimulationTestNode()
+
+    def test_obstacle_detection(self):
+        """Test that robot can detect obstacles in simulation"""
+        # Wait for scan data
+        while self.node.scan_data is None:
+            rclpy.spin_once(self.node, timeout_sec=0.1)
+
+        # Check that we have valid scan data
+        self.assertIsNotNone(self.node.scan_data)
+        self.assertGreater(len(self.node.scan_data), 0)
+
+        # Check for obstacles within 1 meter
+        obstacles = [d for d in self.node.scan_data if d < 1.0 and d > 0.1]
+        self.assertGreater(len(obstacles), 0, "No obstacles detected in environment")
+
+    def tearDown(self):
+        self.node.destroy_node()
+        rclpy.shutdown()
+
+if __name__ == '__main__':
+    unittest.main()
+```
+
+## 6. Unity-Specific Robotics Features
+
+### ML-Agents Integration
+
+Unity ML-Agents can be used for training robot behaviors:
+
+```csharp
+using Unity.MLAgents;
+using Unity.MLAgents.Sensors;
+using Unity.MLAgents.Actuators;
+
+public class RobotAgent : Agent
+{
+    public override void OnEpisodeBegin()
+    {
+        // Reset robot position and target
+    }
+
+    public override void CollectObservations(VectorSensor sensor)
+    {
+        // Add observations about robot state
+        sensor.AddObservation(transform.position);
+        sensor.AddObservation(GetTargetDirection());
+    }
+
+    public override void OnActionReceived(ActionBuffers actions)
+    {
+        // Apply actions to robot
+        float forward = actions.ContinuousActions[0];
+        float turn = actions.ContinuousActions[1];
+
+        // Move robot based on actions
+        transform.position += transform.forward * forward * Time.deltaTime;
+        transform.Rotate(0, turn, 0);
+
+        // Reward function
+        if (ReachedTarget())
+        {
+            SetReward(1.0f);
+            EndEpisode();
+        }
+    }
+}
+```
+
+## Practical Exercise
+
+Implement a multi-sensor fusion system in simulation that combines data from:
+1. A camera providing position estimates
+2. An IMU providing orientation and acceleration
+3. A LIDAR providing distance measurements
+4. A particle filter to combine all sensor data
+
+### Requirements
+- Gazebo or Unity with robotics packages
+- ROS2 with sensor message types
+- Basic understanding of filtering algorithms
+
+### Expected Outcome
+A working sensor fusion system that demonstrates improved state estimation compared to individual sensors.
+
+## Summary
+
+This week covered advanced simulation techniques and Unity's capabilities for robotics. You learned about custom physics plugins, sensor fusion algorithms, realistic sensor modeling, and automated testing in simulation environments. These advanced techniques allow for more realistic and comprehensive testing of robotic systems before deployment on physical hardware. The next module will explore AI techniques for robotics perception and control.

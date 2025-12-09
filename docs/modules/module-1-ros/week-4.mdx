@@ -1,0 +1,141 @@
+---
+title: Week 4 - ROS2 Nodes, Topics, and Services
+description: Deep dive into ROS2 communication patterns nodes topics and services
+tags: [ros2, nodes, topics, services, communication]
+---
+
+# Week 4 - ROS2 Nodes, Topics, and Services
+
+This week, we'll dive deeper into the core communication patterns in ROS2: nodes, topics, and services. Understanding these concepts is crucial for building distributed robotic systems.
+
+## Learning Objectives
+
+By the end of this week, you will be able to:
+- Create and manage ROS2 nodes effectively
+- Implement publisher-subscriber communication using topics
+- Design and implement service-based communication
+- Understand the differences between topics and services
+- Debug common communication issues in ROS2
+
+## 1. Advanced Node Concepts
+
+### Node Lifecycle
+
+ROS2 nodes can have different lifecycle states: unconfigured, inactive, active, and finalized. This allows for more controlled robot startup, shutdown, and error recovery.
+
+```python
+from rclpy.lifecycle import LifecycleNode, LifecycleState
+from rclpy.lifecycle import TransitionCallbackReturn
+
+class LifecyclePublisher(LifecycleNode):
+    def __init__(self):
+        super().__init__('lifecycle_publisher')
+        self.pub = None
+
+    def on_configure(self, state):
+        self.pub = self.create_publisher(String, 'lifecycle_chatter', 10)
+        self.get_logger().info('Lifecycle publisher is configured')
+        return TransitionCallbackReturn.SUCCESS
+
+    def on_activate(self, state):
+        self.get_logger().info('Lifecycle publisher is activated')
+        return super().on_activate(state)
+```
+
+### Node Parameters
+
+Nodes can accept parameters at runtime, making them configurable without recompilation:
+
+```python
+class ParameterNode(Node):
+    def __init__(self):
+        super().__init__('parameter_node')
+
+        # Declare parameters with default values
+        self.declare_parameter('robot_name', 'default_robot')
+        self.declare_parameter('max_velocity', 1.0)
+
+        # Get parameter values
+        self.robot_name = self.get_parameter('robot_name').value
+        self.max_velocity = self.get_parameter('max_velocity').value
+```
+
+## 2. Topics - Publisher-Subscriber Pattern
+
+Topics enable asynchronous, many-to-many communication. Publishers send messages to a topic, and any number of subscribers can receive those messages.
+
+### Quality of Service (QoS)
+
+ROS2 provides QoS profiles to control communication behavior:
+
+```python
+from rclpy.qos import QoSProfile, ReliabilityPolicy, DurabilityPolicy
+
+# Create a QoS profile for reliable communication
+qos_profile = QoSProfile(
+    depth=10,
+    reliability=ReliabilityPolicy.RELIABLE,
+    durability=DurabilityPolicy.VOLATILE
+)
+
+publisher = node.create_publisher(String, 'topic_name', qos_profile)
+```
+
+### Common QoS Settings
+
+- **Reliability**: RELIABLE (all messages delivered) or BEST_EFFORT (try to deliver messages)
+- **Durability**: VOLATILE (don't keep messages for late joiners) or TRANSIENT_LOCAL (keep messages for late joiners)
+- **History**: KEEP_LAST (keep N most recent messages) or KEEP_ALL (keep all messages)
+
+## 3. Services - Request-Reply Pattern
+
+Services provide synchronous, one-to-one communication. A client sends a request and waits for a response from the service server.
+
+```python
+# Service server
+from example_interfaces.srv import AddTwoInts
+
+def add_two_ints_callback(request, response):
+    response.sum = request.a + request.b
+    self.get_logger().info(f'Request: {request.a} + {request.b}')
+    return response
+
+service = self.create_service(AddTwoInts, 'add_two_ints', add_two_ints_callback)
+
+# Service client
+client = self.create_client(AddTwoInts, 'add_two_ints')
+```
+
+## 4. Tools for Communication Debugging
+
+### ros2 topic
+- `ros2 topic list` - List all active topics
+- `ros2 topic echo <topic_name>` - Print messages from a topic
+- `ros2 topic info <topic_name>` - Show information about a topic
+
+### ros2 service
+- `ros2 service list` - List all active services
+- `ros2 service call <service_name> <service_type> <arguments>` - Call a service
+
+### rqt tools
+- `rqt_graph` - Visualize the node graph
+- `rqt_topic` - Monitor topic messages
+- `rqt_service_caller` - Call services interactively
+
+## Practical Exercise
+
+Implement a robot status monitoring system with the following components:
+1. A robot node that publishes its status (position, battery, operational state) to a topic
+2. A monitoring node that subscribes to the status topic and logs changes
+3. A service that allows external nodes to query the robot's current status on demand
+
+### Requirements
+- ROS2 Humble Hawksbill
+- Understanding of basic ROS2 concepts from Week 3
+
+### Expected Outcome
+A working system that demonstrates both topic-based and service-based communication patterns.
+
+## Summary
+
+This week covered the essential communication patterns in ROS2. You learned how to implement publisher-subscriber communication for asynchronous data exchange and service-based communication for synchronous request-reply interactions. These patterns form the backbone of most robotic applications. Next week, we'll explore ROS2 packages and the build system.

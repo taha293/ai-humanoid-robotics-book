@@ -1,0 +1,304 @@
+/**
+ * Any CSS included here will be global. The classic template
+ * bundles Infima by default. Infima is a CSS framework designed to
+ * work well for content-centric websites.
+ */
+
+/* You can override the default Infima variables here. */
+:root {
+  --ifm-color-primary: #2e8555;
+  --ifm-color-primary-dark: #29784c;
+  --ifm-color-primary-darker: #277148;
+  --ifm-color-primary-darkest: #205d3b;
+  --ifm-color-primary-light: #33925d;
+  --ifm-color-primary-lighter: #359962;
+  --ifm-color-primary-lightest: #3cad6e;
+  --ifm-code-font-size: 95%;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+  --ifm-hero-background-color: #f6f8fa;
+  --ifm-hero-text-color: #1c1e21;
+}
+
+/* For readability concerns, you should choose a lighter palette in dark mode. */
+[data-theme='dark'] {
+  --ifm-color-primary: #25c2a0;
+  --ifm-color-primary-dark: #21af90;
+  --ifm-color-primary-darker: #1fa588;
+  --ifm-color-primary-darkest: #1a8870;
+  --ifm-color-primary-light: #29d5b0;
+  --ifm-color-primary-lighter: #32d8b4;
+  --ifm-color-primary-lightest: #4fddbf;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+  --ifm-hero-background-color: #1c1e21;
+  --ifm-hero-text-color: #ffffff;
+  --ifm-background-color: #1a1a1a;
+  --ifm-background-surface-color: #1c1e21;
+  --ifm-color-emphasis-300: #333;
+  --ifm-color-content: #ffffff;
+  --ifm-color-content-secondary: #dddddd;
+  --ifm-button-background-color: #2a2a2a;
+  --ifm-button-border-color: #444;
+  --ifm-button-color: #ffffff;
+  --ifm-color-primary: #2e8555; /* Maintain green color in dark mode */
+}
+
+/* Stats section specific styles for dark mode */
+[data-theme='dark'] .stats h3 {
+  color: var(--ifm-color-primary) !important;
+}
+
+[data-theme='dark'] .stats p {
+  color: var(--ifm-color-content) !important;
+}
+
+/* Dark mode fixes for cards and sections */
+[data-theme='dark'] .interactive-card {
+  background-color: var(--ifm-background-surface-color) !important;
+  color: var(--ifm-color-content) !important;
+  border: 1px solid var(--ifm-color-emphasis-300) !important;
+}
+
+[data-theme='dark'] .featureSvg {
+  filter: brightness(1.2);
+}
+
+[data-theme='dark'] .hero--primary {
+  background: linear-gradient(135deg, var(--ifm-color-primary-darker) 0%, var(--ifm-color-primary) 100%);
+}
+
+[data-theme='dark'] .text--center {
+  color: var(--ifm-color-content) !important;
+}
+
+[data-theme='dark'] h1, [data-theme='dark'] h2, [data-theme='dark'] h3, [data-theme='dark'] h4 {
+  color: var(--ifm-color-content) !important;
+}
+
+[data-theme='dark'] p {
+  color: var(--ifm-color-content-secondary) !important;
+}
+
+/* Dark mode specific overrides for better contrast */
+[data-theme='dark'] .interactive-card {
+  background-color: #2a2a2a !important;
+  color: #ffffff;
+  border: 1px solid #444;
+}
+
+[data-theme='dark'] .features {
+  background-color: #1a1a1a !important;
+}
+
+[data-theme='dark'] .weeks {
+  background-color: #1c1e21 !important;
+}
+
+[data-theme='dark'] .stats {
+  background-color: #1a1a1a !important;
+}
+
+[data-theme='dark'] .text--center {
+  color: #ffffff !important;
+}
+
+[data-theme='dark'] h1, [data-theme='dark'] h2, [data-theme='dark'] h3, [data-theme='dark'] h4, [data-theme='dark'] h5, [data-theme='dark'] h6 {
+  color: #ffffff !important;
+}
+
+[data-theme='dark'] p {
+  color: #dddddd !important;
+}
+
+[data-theme='dark'] .hero__subtitle {
+  color: #cccccc !important;
+}
+
+[data-theme='dark'] .col {
+  background-color: transparent;
+}
+
+/* Modern Hero Banner Styles */
+.hero.hero--primary {
+  background: linear-gradient(135deg, var(--ifm-color-primary-light) 0%, var(--ifm-color-primary) 100%);
+  color: var(--ifm-hero-text-color);
+  position: relative;
+  overflow: hidden;
+}
+
+.hero__title {
+  font-size: 3rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.hero__subtitle {
+  font-size: 1.25rem;
+  opacity: 0.9;
+  margin-bottom: 2rem;
+}
+
+/* Button Styles */
+.button {
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+}
+
+.button--secondary {
+  background-color: white !important;
+  color: var(--ifm-color-primary) !important;
+}
+
+.button--outline {
+  background-color: transparent !important;
+  border: 2px solid white;
+  color: white !important;
+}
+
+/* Features Section */
+.features {
+  padding: 4rem 0;
+  background-color: var(--ifm-hero-background-color);
+}
+
+.features h3 {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  color: var(--ifm-hero-text-color);
+}
+
+.features p {
+  color: color-mix(in srgb, var(--ifm-hero-text-color) 70%, transparent);
+}
+
+/* Modules Section */
+.modules {
+  padding: 4rem 0;
+}
+
+.modules h2 {
+  font-size: 2.5rem;
+  margin-bottom: 3rem;
+  text-align: center;
+  color: var(--ifm-hero-text-color);
+}
+
+.modules h4 {
+  color: var(--ifm-color-primary);
+  margin-bottom: 0.5rem;
+}
+
+/* Weeks Section */
+.weeks {
+  padding: 4rem 0;
+  background-color: #f8fafc;
+}
+
+.weeks h2 {
+  font-size: 2.5rem;
+  margin-bottom: 3rem;
+  text-align: center;
+  color: var(--ifm-hero-text-color);
+}
+
+/* Card hover effects */
+.col {
+  transition: transform 0.3s ease;
+}
+
+.col:hover {
+  transform: translateY(-5px);
+}
+
+/* Animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in-up {
+  animation: fadeInUp 0.6s ease forwards;
+}
+
+.delay-1 {
+  animation-delay: 0.1s;
+}
+
+.delay-2 {
+  animation-delay: 0.2s;
+}
+
+.delay-3 {
+  animation-delay: 0.3s;
+}
+
+/* Interactive Elements */
+.interactive-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+  transition: all 0.3s ease;
+  border: 1px solid rgba(0,0,0,0.05);
+}
+
+.interactive-card:hover {
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+  transform: translateY(-3px);
+}
+
+/* Custom styles for educational content */
+.educational-content {
+  margin-top: 2rem;
+}
+
+.learning-objectives {
+  background-color: #f0f8ff;
+  border-left: 4px solid #007acc;
+  padding: 1rem;
+  margin: 1rem 0;
+}
+
+.practical-exercise {
+  background-color: #fff8dc;
+  border: 1px solid #ffd700;
+  padding: 1rem;
+  margin: 1rem 0;
+  border-radius: 4px;
+}
+
+.diagram-container {
+  text-align: center;
+  margin: 2rem 0;
+  padding: 1rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 996px) {
+  .hero__title {
+    font-size: 2.5rem;
+  }
+
+  .hero__subtitle {
+    font-size: 1.1rem;
+  }
+
+  .features, .modules, .weeks {
+    padding: 2rem 0;
+  }
+}

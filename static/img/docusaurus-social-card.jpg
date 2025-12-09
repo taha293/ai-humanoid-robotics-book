@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640">
+  <rect width="1280" height="640" fill="#2e8555" />
+  <text x="640" y="200" text-anchor="middle" fill="white" font-family="Arial" font-size="60">Physical AI & Humanoid Robotics</text>
+  <text x="640" y="300" text-anchor="middle" fill="white" font-family="Arial" font-size="40">A comprehensive guide to Physical AI and Humanoid Robotics</text>
+  <g transform="translate(640,450)">
+    <circle cx="0" cy="-20" r="40" fill="#fff" />
+    <rect x="-30" y="0" width="60" height="80" fill="#fff" />
+    <rect x="-20" y="-40" width="15" height="30" fill="#fff" transform="rotate(30 -20 -40)" />
+    <rect x="5" y="-40" width="15" height="30" fill="#fff" transform="rotate(-30 20 -40)" />
+    <rect x="-25" y="70" width="15" height="40" fill="#fff" transform="rotate(15 -20 70)" />
+    <rect x="10" y="70" width="15" height="40" fill="#fff" transform="rotate(-15 20 70)" />
+  </g>
+</svg>

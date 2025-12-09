@@ -1,0 +1,600 @@
+---
+title: Week 10 - Sim-to-Real Transfer and Robot Control
+description: Advanced sim-to-real techniques, robot control systems, and real-world deployment
+tags: [sim-to-real, robot-control, deployment, domain-adaptation]
+---
+
+# Week 10 - Sim-to-Real Transfer and Robot Control
+
+In this final week of Module 3, we'll explore advanced sim-to-real transfer techniques and complete robot control systems that bridge the gap between simulation and real-world deployment.
+
+## Learning Objectives
+
+By the end of this week, you will be able to:
+- Apply advanced sim-to-real transfer techniques to deploy simulation-trained models on real robots
+- Implement robust robot control systems that handle real-world uncertainties
+- Design domain randomization strategies for improved transfer
+- Address the "reality gap" between simulation and real environments
+- Deploy AI models on physical robotic platforms
+
+## 1. The Reality Gap Problem
+
+The "reality gap" refers to the differences between simulation and the real world that can cause simulation-trained policies to fail when deployed on real robots. These differences include:
+
+### Physical Differences
+- **Dynamics**: Mass, friction, and inertial properties may differ
+- **Actuation**: Motor characteristics, delays, and noise
+- **Sensing**: Sensor noise, latency, and calibration differences
+- **Environment**: Surface properties, lighting conditions, and external disturbances
+
+### Solutions to the Reality Gap
+- **Domain Randomization**: Randomize simulation parameters to improve robustness
+- **System Identification**: Calibrate simulation models using real robot data
+- **Adaptive Control**: Adjust control parameters based on real-world performance
+- **Fine-tuning**: Minor adjustments to policies using real-world data
+
+## 2. Advanced Domain Randomization
+
+### Systematic Randomization
+
+```python
+class AdvancedDomainRandomizer:
+    def __init__(self):
+        # Physical properties randomization
+        self.mass_range = (0.8, 1.2)  # ±20% of nominal mass
+        self.friction_range = (0.1, 1.0)  # Wide range of friction coefficients
+        self.damping_range = (0.5, 2.0)  # Joint damping variation
+
+        # Visual randomization
+        self.lighting_range = (0.5, 2.0)  # Light intensity
+        self.texture_range = (0.1, 1.0)  # Texture variations
+        self.color_range = (0.0, 1.0)  # Color randomization
+
+        # Sensor randomization
+        self.noise_range = (0.0, 0.1)  # Sensor noise levels
+        self.delay_range = (0.0, 0.05)  # Sensor delays in seconds
+
+    def randomize_robot_properties(self, robot):
+        """Randomize robot physical properties"""
+        for joint in robot.joints:
+            # Randomize mass
+            original_mass = joint.get_mass()
+            random_mass = original_mass * np.random.uniform(*self.mass_range)
+            joint.set_mass(random_mass)
+
+            # Randomize friction
+            random_friction = np.random.uniform(*self.friction_range)
+            joint.set_friction(random_friction)
+
+            # Randomize damping
+            random_damping = np.random.uniform(*self.damping_range)
+            joint.set_damping(random_damping)
+
+    def randomize_sensors(self, sensors):
+        """Randomize sensor characteristics"""
+        for sensor in sensors:
+            # Add random noise
+            noise_level = np.random.uniform(*self.noise_range)
+            sensor.set_noise_level(noise_level)
+
+            # Add random delay
+            delay = np.random.uniform(*self.delay_range)
+            sensor.set_delay(delay)
+
+    def adaptive_randomization(self, performance_metrics):
+        """Adjust randomization based on performance feedback"""
+        # If performance is good, reduce randomization range
+        if performance_metrics['success_rate'] > 0.9:
+            self.reduce_randomization()
+        # If performance is poor, increase randomization range
+        elif performance_metrics['success_rate'] < 0.5:
+            self.increase_randomization()
+
+    def reduce_randomization(self):
+        """Reduce randomization ranges"""
+        self.mass_range = tuple(1.0 + 0.5 * (x - 1.0) for x in self.mass_range)
+        self.friction_range = tuple(0.5 * x for x in self.friction_range)
+
+    def increase_randomization(self):
+        """Increase randomization ranges"""
+        self.mass_range = tuple(1.0 + 2.0 * (x - 1.0) for x in self.mass_range)
+        self.friction_range = tuple(2.0 * x for x in self.friction_range)
+```
+
+### Curriculum Learning for Domain Transfer
+
+```python
+class CurriculumDomainRandomizer:
+    def __init__(self):
+        self.stages = [
+            {'name': 'easy', 'params': {'randomization_factor': 0.1}},
+            {'name': 'medium', 'params': {'randomization_factor': 0.3}},
+            {'name': 'hard', 'params': {'randomization_factor': 0.6}},
+            {'name': 'transfer', 'params': {'randomization_factor': 1.0}},
+        ]
+        self.current_stage = 0
+
+    def advance_stage(self, success_threshold=0.8):
+        """Advance to next randomization stage based on performance"""
+        if self.current_stage < len(self.stages) - 1:
+            if self.get_current_success_rate() >= success_threshold:
+                self.current_stage += 1
+                print(f"Advancing to {self.stages[self.current_stage]['name']} stage")
+                return True
+        return False
+
+    def get_randomization_params(self):
+        """Get current randomization parameters"""
+        return self.stages[self.current_stage]['params']
+```
+
+## 3. System Identification and Model Calibration
+
+### Parameter Estimation
+
+```python
+import numpy as np
+from scipy.optimize import minimize
+
+class SystemIdentifier:
+    def __init__(self, robot_model):
+        self.model = robot_model
+        self.nominal_params = robot_model.get_parameters()
+        self.identifiable_params = [
+            'mass', 'friction', 'inertia', 'motor_constants'
+        ]
+
+    def collect_excitation_data(self, robot, trajectory_generator):
+        """Collect data for system identification"""
+        states = []
+        actions = []
+        next_states = []
+
+        for _ in range(100):  # Collect 100 trajectories
+            trajectory = trajectory_generator.generate_excitation_trajectory()
+            for state, action in trajectory:
+                robot.apply_action(action)
+                robot.step_simulation()
+                next_state = robot.get_state()
+
+                states.append(state)
+                actions.append(action)
+                next_states.append(next_state)
+
+        return np.array(states), np.array(actions), np.array(next_states)
+
+    def objective_function(self, params, states, actions, next_states):
+        """Objective function for parameter optimization"""
+        # Set model parameters
+        self.model.set_parameters(params)
+
+        total_error = 0
+        for s, a, s_next in zip(states, actions, next_states):
+            predicted_next = self.model.predict_next_state(s, a)
+            error = np.sum((predicted_next - s_next) ** 2)
+            total_error += error
+
+        return total_error
+
+    def identify_parameters(self, states, actions, next_states):
+        """Identify robot parameters using collected data"""
+        # Define bounds for parameters
+        bounds = self.get_parameter_bounds()
+
+        # Optimize parameters
+        result = minimize(
+            fun=self.objective_function,
+            x0=self.nominal_params,
+            args=(states, actions, next_states),
+            bounds=bounds,
+            method='L-BFGS-B'
+        )
+
+        return result.x
+
+    def get_parameter_bounds(self):
+        """Define bounds for parameter identification"""
+        bounds = []
+        for param in self.nominal_params:
+            # Allow ±50% variation for most parameters
+            lower = param * 0.5
+            upper = param * 1.5
+            bounds.append((lower, upper))
+        return bounds
+```
+
+### Online Model Adaptation
+
+```python
+class OnlineModelAdaptor:
+    def __init__(self, initial_model):
+        self.model = initial_model
+        self.adaptation_rate = 0.01
+        self.model_error_history = []
+
+    def adapt_model(self, real_state, predicted_state, action):
+        """Adapt model parameters based on prediction error"""
+        error = real_state - predicted_state
+        self.model_error_history.append(np.linalg.norm(error))
+
+        # Keep only recent errors
+        if len(self.model_error_history) > 100:
+            self.model_error_history.pop(0)
+
+        # If error is consistently high, adapt model
+        if (len(self.model_error_history) >= 10 and
+            np.mean(self.model_error_history[-10:]) > 0.1):
+            self.update_model_parameters(error, action)
+
+    def update_model_parameters(self, error, action):
+        """Update model parameters based on error"""
+        # Simple gradient-based adaptation
+        # In practice, this would involve more sophisticated techniques
+        param_gradients = self.compute_parameter_gradients(error, action)
+        self.model.update_parameters(
+            param_gradients * self.adaptation_rate
+        )
+```
+
+## 4. Robust Control Systems
+
+### Adaptive Control
+
+```python
+class AdaptiveController:
+    def __init__(self, robot_dynamics):
+        self.dynamics = robot_dynamics
+        self.theta_hat = np.zeros(10)  # Estimated parameters
+        self.gamma = 1.0  # Adaptation gain
+        self.P = np.eye(10) * 10  # Covariance matrix
+
+    def control(self, state, reference):
+        """Compute control with parameter adaptation"""
+        # Estimate dynamics
+        phi = self.regression_vector(state, reference)
+        Y = self.dynamics.regression_matrix(state, reference)
+
+        # Compute control law
+        control_input = self.dynamics.inverse_dynamics(
+            state, reference, self.theta_hat
+        )
+
+        # Update parameter estimates
+        prediction_error = state - self.dynamics.predict(state, control_input, self.theta_hat)
+        self.adapt_parameters(Y, prediction_error)
+
+        return control_input
+
+    def adapt_parameters(self, Y, error):
+        """Update parameter estimates using least squares"""
+        # Compute gain
+        K = self.P @ Y.T @ np.linalg.inv(Y @ self.P @ Y.T + 1)
+
+        # Update parameter estimates
+        self.theta_hat += K @ error
+
+        # Update covariance
+        self.P = (np.eye(len(self.P)) - K @ Y) @ self.P
+```
+
+### Robust Control with Uncertainty
+
+```python
+class RobustController:
+    def __init__(self, nominal_controller, uncertainty_bounds):
+        self.nominal_controller = nominal_controller
+        self.uncertainty_bounds = uncertainty_bounds
+        self.robust_margin = 0.2  # 20% robustness margin
+
+    def robust_control(self, state, reference):
+        """Compute robust control input"""
+        # Get nominal control
+        nominal_control = self.nominal_controller.compute(state, reference)
+
+        # Compute uncertainty estimate
+        uncertainty_estimate = self.estimate_uncertainty(state)
+
+        # Add robustness term
+        robust_control = nominal_control + self.robust_term(
+            uncertainty_estimate, state, reference
+        )
+
+        return np.clip(robust_control, -1.0, 1.0)
+
+    def estimate_uncertainty(self, state):
+        """Estimate model uncertainty"""
+        # Use learned uncertainty model or conservative estimate
+        return np.random.uniform(0, self.uncertainty_bounds)
+
+    def robust_term(self, uncertainty, state, reference):
+        """Compute robustness compensation term"""
+        # Simple robust term - in practice, this would be more sophisticated
+        return -np.sign(state[:2]) * uncertainty * self.robust_margin
+```
+
+## 5. Real-World Deployment Considerations
+
+### Safety Mechanisms
+
+```python
+class SafetyMonitor:
+    def __init__(self, robot_limits):
+        self.joint_limits = robot_limits['joint']
+        self.velocity_limits = robot_limits['velocity']
+        self.force_limits = robot_limits['force']
+        self.workspace_limits = robot_limits['workspace']
+
+        self.emergency_stop = False
+        self.safety_violations = []
+
+    def check_safety(self, state, action):
+        """Check if proposed action is safe"""
+        violations = []
+
+        # Check joint limits
+        next_joint_pos = state['joints'] + action['joint_velocities'] * 0.01  # 10ms step
+        if np.any(next_joint_pos < self.joint_limits['min']) or \
+           np.any(next_joint_pos > self.joint_limits['max']):
+            violations.append('joint_limit_violation')
+
+        # Check velocity limits
+        if np.any(np.abs(action['joint_velocities']) > self.velocity_limits['max']):
+            violations.append('velocity_limit_violation')
+
+        # Check force limits
+        if 'joint_forces' in state and \
+           np.any(np.abs(state['joint_forces']) > self.force_limits['max']):
+            violations.append('force_limit_violation')
+
+        # Check workspace limits
+        ee_pos = self.forward_kinematics(next_joint_pos)
+        if not self.in_workspace(ee_pos):
+            violations.append('workspace_violation')
+
+        self.safety_violations = violations
+        self.emergency_stop = len(violations) > 0
+
+        return len(violations) == 0, violations
+
+    def in_workspace(self, position):
+        """Check if position is within workspace"""
+        return (self.workspace_limits['min'] <= position).all() and \
+               (position <= self.workspace_limits['max']).all()
+```
+
+### Fault Detection and Recovery
+
+```python
+class FaultDetector:
+    def __init__(self):
+        self.anomaly_threshold = 0.1
+        self.fault_history = []
+        self.recovery_strategies = {
+            'joint_stuck': self.recovery_joint_stuck,
+            'sensor_failure': self.recovery_sensor_failure,
+            'communication_loss': self.recovery_communication_loss
+        }
+
+    def detect_faults(self, state, expected_state, sensor_data):
+        """Detect potential faults in the system"""
+        faults = []
+
+        # Check state consistency
+        state_error = np.linalg.norm(state - expected_state)
+        if state_error > self.anomaly_threshold:
+            faults.append('state_inconsistency')
+
+        # Check sensor data validity
+        if self.is_sensor_faulty(sensor_data):
+            faults.append('sensor_failure')
+
+        # Check actuator response
+        if self.is_actuator_faulty(state):
+            faults.append('actuator_failure')
+
+        self.fault_history.append(faults)
+        return faults
+
+    def is_sensor_faulty(self, sensor_data):
+        """Check for sensor faults"""
+        # Check for stuck values, unrealistic readings, etc.
+        return False  # Implementation would check sensor health
+
+    def is_actuator_faulty(self, state):
+        """Check for actuator faults"""
+        # Check for unexpected joint behavior
+        return False  # Implementation would check actuator health
+
+    def execute_recovery(self, fault_type):
+        """Execute appropriate recovery strategy"""
+        if fault_type in self.recovery_strategies:
+            return self.recovery_strategies[fault_type]()
+        return False
+
+    def recovery_joint_stuck(self):
+        """Recovery strategy for stuck joints"""
+        # Try to move joint back and forth gently
+        return True
+
+    def recovery_sensor_failure(self):
+        """Recovery strategy for sensor failure"""
+        # Switch to backup sensors or estimation
+        return True
+
+    def recovery_communication_loss(self):
+        """Recovery strategy for communication loss"""
+        # Enter safe hold position
+        return True
+```
+
+## 6. Deployment Pipeline
+
+### Model Conversion and Optimization
+
+```python
+import torch
+import torch_tensorrt
+
+class DeploymentPipeline:
+    def __init__(self):
+        self.optimization_methods = {
+            'tensorrt': self.optimize_tensorrt,
+            'onnx': self.optimize_onnx,
+            'torchscript': self.optimize_torchscript
+        }
+
+    def optimize_for_hardware(self, model, target_hardware):
+        """Optimize model for specific hardware"""
+        if target_hardware == 'jetson':
+            return self.optimize_tensorrt(model)
+        elif target_hardware == 'cpu':
+            return self.optimize_for_cpu(model)
+        else:
+            return model  # Return original model
+
+    def optimize_tensorrt(self, model):
+        """Optimize model for NVIDIA TensorRT"""
+        # Convert to TensorRT optimized model
+        optimized_model = torch_tensorrt.compile(
+            model,
+            inputs=[torch_tensorrt.Input((1, 3, 224, 224))],
+            enabled_precisions={torch.float}
+        )
+        return optimized_model
+
+    def optimize_onnx(self, model):
+        """Convert model to ONNX format"""
+        dummy_input = torch.randn(1, 3, 224, 224)
+        torch.onnx.export(
+            model,
+            dummy_input,
+            "model.onnx",
+            export_params=True,
+            opset_version=11,
+            do_constant_folding=True
+        )
+        return "model.onnx"
+
+    def optimize_torchscript(self, model):
+        """Convert model to TorchScript"""
+        dummy_input = torch.randn(1, 3, 224, 224)
+        traced_model = torch.jit.trace(model, dummy_input)
+        traced_model.save("model_traced.pt")
+        return traced_model
+```
+
+### Edge Deployment
+
+```python
+class EdgeDeployment:
+    def __init__(self, robot_hardware):
+        self.hardware = robot_hardware
+        self.model = None
+        self.sensors = robot_hardware.sensors
+        self.actuators = robot_hardware.actuators
+
+    def load_model(self, model_path):
+        """Load optimized model for edge deployment"""
+        if model_path.endswith('.pt'):
+            self.model = torch.jit.load(model_path)
+        elif model_path.endswith('.onnx'):
+            import onnxruntime
+            self.model = onnxruntime.InferenceSession(model_path)
+        else:
+            raise ValueError("Unsupported model format")
+
+    def run_inference(self, sensor_data):
+        """Run inference on edge device"""
+        # Preprocess sensor data
+        processed_data = self.preprocess(sensor_data)
+
+        # Run inference
+        if hasattr(self.model, 'predict'):  # TorchScript model
+            with torch.no_grad():
+                action = self.model(processed_data)
+        else:  # ONNX model
+            action = self.model.run(None, {'input': processed_data.cpu().numpy()})[0]
+
+        return action
+
+    def preprocess(self, sensor_data):
+        """Preprocess sensor data for model input"""
+        # Normalize and format data appropriately
+        normalized_data = (sensor_data - self.mean) / self.std
+        return torch.FloatTensor(normalized_data).unsqueeze(0)
+```
+
+## 7. Performance Monitoring and Adaptation
+
+### Real-Time Performance Monitoring
+
+```python
+import time
+import psutil
+from collections import deque
+
+class PerformanceMonitor:
+    def __init__(self, window_size=100):
+        self.loop_times = deque(maxlen=window_size)
+        self.cpu_usage = deque(maxlen=window_size)
+        self.memory_usage = deque(maxlen=window_size)
+        self.fps_history = deque(maxlen=window_size)
+
+    def start_iteration(self):
+        """Start timing an iteration"""
+        self.iteration_start_time = time.time()
+
+    def end_iteration(self):
+        """End timing an iteration and record metrics"""
+        iteration_time = time.time() - self.iteration_start_time
+        self.loop_times.append(iteration_time)
+
+        # Record system metrics
+        self.cpu_usage.append(psutil.cpu_percent())
+        self.memory_usage.append(psutil.virtual_memory().percent)
+        self.fps_history.append(1.0 / iteration_time if iteration_time > 0 else 0)
+
+    def get_performance_metrics(self):
+        """Get current performance metrics"""
+        if len(self.loop_times) == 0:
+            return {}
+
+        return {
+            'avg_loop_time': np.mean(self.loop_times),
+            'min_loop_time': np.min(self.loop_times),
+            'max_loop_time': np.max(self.loop_times),
+            'avg_fps': np.mean(self.fps_history),
+            'avg_cpu': np.mean(self.cpu_usage),
+            'avg_memory': np.mean(self.memory_usage),
+            'loop_time_std': np.std(self.loop_times)
+        }
+
+    def is_performance_degraded(self, threshold_fps=30):
+        """Check if performance is degraded"""
+        if len(self.fps_history) < 10:
+            return False
+
+        recent_avg_fps = np.mean(list(self.fps_history)[-10:])
+        return recent_avg_fps < threshold_fps
+```
+
+## Practical Exercise
+
+Implement a complete sim-to-real transfer pipeline:
+1. Train a policy in simulation using domain randomization
+2. Collect system identification data from a real robot
+3. Adapt the simulation model using real data
+4. Deploy the trained policy on the real robot with safety mechanisms
+5. Monitor performance and adapt as needed
+
+### Requirements
+- Simulation environment with domain randomization
+- Access to a real robot or high-fidelity simulation
+- Understanding of control systems and safety mechanisms
+
+### Expected Outcome
+A working sim-to-real transfer system that successfully deploys a simulation-trained policy on a real robot with appropriate safety and monitoring systems.
+
+## Summary
+
+This week covered advanced sim-to-real transfer techniques and real-world deployment considerations for AI-powered robotic systems. You learned about domain randomization, system identification, robust control systems, safety mechanisms, and deployment pipelines. These techniques are essential for bridging the gap between simulation and reality, enabling the deployment of AI models on physical robotic platforms. The next module will explore multimodal interaction and cognitive planning for advanced robotic systems.

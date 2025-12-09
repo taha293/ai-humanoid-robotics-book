@@ -1,0 +1,438 @@
+---
+title: Week 8 - Isaac Sim and AI Perception
+description: NVIDIA Isaac Sim, AI perception, computer vision, and sensor processing
+tags: [nvidia-isaac-sim, ai-perception, computer-vision, sensor-processing]
+---
+
+# Week 8 - Isaac Sim and AI Perception
+
+Welcome to Module 3: The AI-Robot Brain. This week, we'll explore NVIDIA Isaac Sim and AI perception techniques that enable robots to understand and interact with their environment.
+
+## Learning Objectives
+
+By the end of this week, you will be able to:
+- Set up and configure NVIDIA Isaac Sim for robotics applications
+- Implement computer vision algorithms for robot perception
+- Apply deep learning models for object detection and recognition
+- Process sensor data using AI techniques
+- Understand the sim-to-real transfer challenges
+
+## 1. Introduction to NVIDIA Isaac Sim
+
+NVIDIA Isaac Sim is a high-fidelity simulation environment specifically designed for robotics and AI development. It provides:
+
+- **RTX-accelerated rendering**: Photorealistic graphics for synthetic data generation
+- **PhysX physics engine**: Accurate physics simulation
+- **Integrated AI tools**: Direct integration with NVIDIA's AI frameworks
+- **ROS2 compatibility**: Seamless integration with ROS2 workflows
+
+### Key Features
+
+- **Synthetic Data Generation**: Create large datasets for training AI models
+- **Domain Randomization**: Vary lighting, textures, and environments to improve model robustness
+- **Physically Accurate Sensors**: High-fidelity simulation of cameras, LIDAR, IMU, etc.
+- **Robot Simulation**: Support for complex articulated robots
+
+## 2. Installing and Setting Up Isaac Sim
+
+### Prerequisites
+
+- NVIDIA GPU with RTX or GTX 1080/2080/Titan V or newer
+- CUDA-compatible GPU driver
+- Isaac Sim compatible with your ROS2 distribution
+
+### Basic Setup
+
+```bash
+# Download Isaac Sim from NVIDIA Developer website
+# Extract and run the setup
+./isaac-sim-2023.1.0-windows-x86_64-release.tar.gz
+
+# Or for Docker users
+docker run --gpus all -it --rm --network=host \
+  --name isaac-sim \
+  -e "ACCEPT_EULA=Y" \
+  -e "PRIVACY_CONSENT=Y" \
+  nvcr.io/nvidia/isaac-sim:2023.1.0
+```
+
+## 3. Isaac Sim Architecture
+
+### USD-Based Scene Description
+
+Isaac Sim uses Universal Scene Description (USD) for scene representation:
+
+```python
+# Example: Creating a simple robot in Isaac Sim
+from omni.isaac.core import World
+from omni.isaac.core.utils.nucleus import get_assets_root_path
+from omni.isaac.core.utils.stage import add_reference_to_stage
+
+# Create a world instance
+world = World(stage_units_in_meters=1.0)
+
+# Add a simple robot
+asset_path = "/Isaac/Robots/Franka/franka_alt_fingers.usd"
+add_reference_to_stage(usd_path=asset_path, prim_path="/World/Robot")
+
+# Initialize the world
+world.reset()
+```
+
+### Extensions and Extensions Framework
+
+Isaac Sim provides various extensions for robotics functionality:
+
+```python
+# Enable ROS2 bridge extension
+from omni.isaac.ros2_bridge import get_ros2_context
+
+# Initialize ROS2 context
+ros2_context = get_ros2_context()
+```
+
+## 4. Computer Vision for Robot Perception
+
+### Image Processing Pipeline
+
+```python
+import cv2
+import numpy as np
+import torch
+import torchvision.transforms as transforms
+
+class RobotVisionSystem:
+    def __init__(self):
+        self.transform = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                              std=[0.229, 0.224, 0.225])
+        ])
+
+    def detect_objects(self, image):
+        """Detect objects in the image using a pre-trained model"""
+        # Convert image for processing
+        input_tensor = self.transform(image).unsqueeze(0)
+
+        # Run object detection (using a model like YOLO or Detectron2)
+        # This is a simplified example
+        detections = self.run_model(input_tensor)
+
+        return detections
+
+    def segment_scene(self, image):
+        """Perform semantic segmentation of the scene"""
+        # Apply segmentation model
+        segmentation = self.segmentation_model(image)
+        return segmentation
+
+    def estimate_depth(self, stereo_images):
+        """Estimate depth from stereo images"""
+        left_img, right_img = stereo_images
+        stereo = cv2.StereoSGBM_create(
+            minDisparity=0,
+            numDisparities=64,
+            blockSize=11,
+            P1=8 * 3 * 11**2,
+            P2=32 * 3 * 11**2,
+        )
+
+        disparity = stereo.compute(left_img, right_img)
+        depth = self.disparity_to_depth(disparity)
+        return depth
+```
+
+### Feature Detection and Matching
+
+```python
+class FeatureDetector:
+    def __init__(self):
+        self.sift = cv2.SIFT_create()
+        self.bf = cv2.BFMatcher()
+
+    def detect_and_describe(self, image):
+        """Detect and describe features in the image"""
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        keypoints, descriptors = self.sift.detectAndCompute(gray, None)
+        return keypoints, descriptors
+
+    def match_features(self, desc1, desc2):
+        """Match features between two images"""
+        matches = self.bf.knnMatch(desc1, desc2, k=2)
+
+        # Apply Lowe's ratio test
+        good_matches = []
+        for m, n in matches:
+            if m.distance < 0.75 * n.distance:
+                good_matches.append(m)
+
+        return good_matches
+```
+
+## 5. Deep Learning Integration
+
+### Object Detection Models
+
+```python
+import torch
+import torchvision
+from torchvision.models.detection import fasterrcnn_resnet50_fpn
+
+class ObjectDetectionSystem:
+    def __init__(self, model_path=None):
+        # Load pre-trained model
+        self.model = fasterrcnn_resnet50_fpn(pretrained=True)
+
+        if model_path:
+            # Load custom trained model
+            self.model.load_state_dict(torch.load(model_path))
+
+        self.model.eval()
+        self.transforms = torchvision.transforms.ToTensor()
+
+    def detect(self, image):
+        """Detect objects in the image"""
+        # Preprocess image
+        image_tensor = self.transforms(image).unsqueeze(0)
+
+        # Run inference
+        with torch.no_grad():
+            predictions = self.model(image_tensor)
+
+        # Process results
+        boxes = predictions[0]['boxes'].cpu().numpy()
+        labels = predictions[0]['labels'].cpu().numpy()
+        scores = predictions[0]['scores'].cpu().numpy()
+
+        # Filter by confidence
+        high_confidence = scores > 0.5
+
+        return {
+            'boxes': boxes[high_confidence],
+            'labels': labels[high_confidence],
+            'scores': scores[high_confidence]
+        }
+```
+
+### Custom Training for Robotics Tasks
+
+```python
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import DataLoader
+
+class RobotPerceptionTrainer:
+    def __init__(self, model, device='cuda'):
+        self.model = model.to(device)
+        self.device = device
+        self.optimizer = optim.Adam(model.parameters(), lr=0.001)
+        self.criterion = nn.CrossEntropyLoss()
+
+    def train_epoch(self, dataloader):
+        """Train for one epoch"""
+        self.model.train()
+        total_loss = 0
+
+        for batch_idx, (data, targets) in enumerate(dataloader):
+            data, targets = data.to(self.device), targets.to(self.device)
+
+            self.optimizer.zero_grad()
+            outputs = self.model(data)
+            loss = self.criterion(outputs, targets)
+            loss.backward()
+            self.optimizer.step()
+
+            total_loss += loss.item()
+
+        return total_loss / len(dataloader)
+
+    def validate(self, dataloader):
+        """Validate the model"""
+        self.model.eval()
+        correct = 0
+        total = 0
+
+        with torch.no_grad():
+            for data, targets in dataloader:
+                data, targets = data.to(self.device), targets.to(self.device)
+                outputs = self.model(data)
+                _, predicted = torch.max(outputs.data, 1)
+                total += targets.size(0)
+                correct += (predicted == targets).sum().item()
+
+        return 100 * correct / total
+```
+
+## 6. Isaac Sim Perception Tools
+
+### Synthetic Data Generation
+
+```python
+from omni.isaac.synthetic_utils import SyntheticDataExtractor
+from omni.isaac.synthetic_utils.annotators import *
+
+class SyntheticDataGenerator:
+    def __init__(self):
+        self.extractor = SyntheticDataExtractor()
+
+    def generate_dataset(self, num_samples=1000):
+        """Generate synthetic dataset with annotations"""
+        for i in range(num_samples):
+            # Randomize scene
+            self.randomize_scene()
+
+            # Capture RGB image
+            rgb_image = self.get_rgb_image()
+
+            # Generate annotations
+            depth = self.get_depth_data()
+            segmentation = self.get_instance_segmentation()
+            bounding_boxes = self.get_bounding_boxes()
+
+            # Save data with annotations
+            self.save_sample(rgb_image, depth, segmentation, bounding_boxes, i)
+
+    def randomize_scene(self):
+        """Randomize lighting, textures, and object positions"""
+        # Change lighting conditions
+        # Randomize object textures
+        # Move objects to new positions
+        pass
+```
+
+### Sensor Simulation in Isaac Sim
+
+```python
+# Configure a camera sensor in Isaac Sim
+from omni.isaac.sensor import Camera
+
+class IsaacSimCamera:
+    def __init__(self, prim_path, resolution=(640, 480)):
+        self.camera = Camera(
+            prim_path=prim_path,
+            frequency=30,
+            resolution=resolution
+        )
+
+        # Configure camera properties
+        self.camera.focal_length = 24.0
+        self.camera.focus_distance = 40.0
+        self.camera.f_stop = 0.8
+
+        # Enable various sensor data
+        self.camera.add_distortion_to_sensor(
+            distortion_model="fisheye",
+            k1=-0.1, k2=0.05, k3=-0.001
+        )
+
+    def get_rgb_data(self):
+        """Get RGB image data"""
+        return self.camera.get_rgb()
+
+    def get_depth_data(self):
+        """Get depth data"""
+        return self.camera.get_depth()
+
+    def get_segmentation_data(self):
+        """Get segmentation data"""
+        return self.camera.get_segmentation()
+```
+
+## 7. Sim-to-Real Transfer
+
+### Domain Randomization
+
+```python
+class DomainRandomizer:
+    def __init__(self):
+        self.lighting_params = {
+            'intensity_range': (1.0, 10.0),
+            'color_temperature_range': (3000, 8000),
+        }
+
+        self.texture_params = {
+            'roughness_range': (0.1, 1.0),
+            'metallic_range': (0.0, 0.5),
+        }
+
+    def randomize_environment(self):
+        """Randomize environmental parameters"""
+        # Randomize lighting
+        intensity = np.random.uniform(*self.lighting_params['intensity_range'])
+        color_temp = np.random.uniform(*self.lighting_params['color_temperature_range'])
+
+        # Apply randomization
+        self.set_lighting(intensity, color_temp)
+
+        # Randomize textures
+        self.randomize_object_textures()
+
+        # Randomize camera parameters
+        self.randomize_camera_noise()
+```
+
+### Domain Adaptation Techniques
+
+```python
+import torch.nn as nn
+
+class DomainAdaptationNetwork(nn.Module):
+    def __init__(self, base_model):
+        super().__init__()
+        self.feature_extractor = base_model
+        self.classifier = nn.Linear(512, num_classes)
+
+        # Domain classifier for adversarial training
+        self.domain_classifier = nn.Sequential(
+            nn.Linear(512, 128),
+            nn.ReLU(),
+            nn.Linear(128, 1),
+            nn.Sigmoid()
+        )
+
+    def forward(self, x, alpha=0.0):
+        """Forward pass with domain adaptation"""
+        features = self.feature_extractor(x)
+
+        # Classification output
+        class_output = self.classifier(features)
+
+        # Domain classification (with gradient reversal)
+        reverse_features = ReverseLayerF.apply(features, alpha)
+        domain_output = self.domain_classifier(reverse_features)
+
+        return class_output, domain_output
+
+class ReverseLayerF(torch.autograd.Function):
+    """Gradient reversal layer"""
+    @staticmethod
+    def forward(ctx, x, alpha):
+        ctx.alpha = alpha
+        return x.view_as(x)
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        output = grad_output.neg() * ctx.alpha
+        return output, None
+```
+
+## Practical Exercise
+
+Implement a complete perception pipeline in Isaac Sim that:
+1. Sets up a robot with camera sensors
+2. Generates synthetic training data
+3. Trains an object detection model on synthetic data
+4. Tests the model's performance with domain randomization
+
+### Requirements
+- NVIDIA Isaac Sim installed
+- GPU with CUDA support
+- Python with PyTorch and OpenCV
+
+### Expected Outcome
+A working perception system that demonstrates synthetic data generation and sim-to-real transfer.
+
+## Summary
+
+This week introduced you to NVIDIA Isaac Sim and AI perception techniques for robotics. You learned about synthetic data generation, computer vision algorithms, deep learning integration, and sim-to-real transfer challenges. Isaac Sim provides powerful tools for developing AI-powered robotic perception systems in a photorealistic simulation environment. Next week, we'll continue exploring AI techniques with reinforcement learning and control.

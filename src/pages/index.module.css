@@ -1,0 +1,92 @@
+/**
+ * CSS files with the .module.css suffix will be treated as CSS modules
+ * and scoped locally.
+ */
+
+.heroBanner {
+  padding: 4rem 0;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+@media screen and (max-width: 996px) {
+  .heroBanner {
+    padding: 2rem;
+  }
+}
+
+.buttons {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.features {
+  display: flex;
+  align-items: center;
+  padding: 2rem 0;
+  width: 100%;
+}
+
+.featureImage {
+  height: 200px;
+  width: 200px;
+}
+
+/* Stats section */
+.stats {
+  padding: 3rem 0;
+  background-color: #f6f8fa;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .featureSvg {
+    animation: ping 4s linear infinite;
+  }
+}
+
+@keyframes ping {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Hover animations for cards */
+.interactive-card {
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.interactive-card:hover {
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+}
+
+/* Fade in animations */
+.fade-in-up {
+  opacity: 0;
+  transform: translateY(20px);
+  animation-fill-mode: forwards;
+}
+
+/* Responsive adjustments */
+@media (max-width: 996px) {
+  .buttons {
+    flex-direction: column;
+  }
+
+  .stats .col {
+    padding: 0.5rem !important;
+  }
+
+  .stats h3 {
+    font-size: 2rem !important;
+  }
+}

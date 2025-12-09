@@ -1,0 +1,608 @@
+---
+title: Week 9 - Reinforcement Learning for Robotics
+description: Reinforcement learning, robot control, policy learning, and autonomous behavior
+tags: [reinforcement-learning, robot-control, policy-learning, autonomous-behavior]
+---
+
+# Week 9 - Reinforcement Learning for Robotics
+
+In this second week of Module 3, we'll explore reinforcement learning (RL) techniques that enable robots to learn complex behaviors through interaction with their environment.
+
+## Learning Objectives
+
+By the end of this week, you will be able to:
+- Implement basic reinforcement learning algorithms for robotic tasks
+- Design reward functions for robotic control problems
+- Apply policy gradient methods for continuous control
+- Use deep reinforcement learning for complex robotic behaviors
+- Understand the challenges of applying RL to real robots
+
+## 1. Introduction to Reinforcement Learning in Robotics
+
+Reinforcement Learning (RL) is particularly well-suited for robotics because it learns through trial and error, just as humans and animals do. In robotics, RL can be used for:
+
+- Motor control and movement learning
+- Navigation and path planning
+- Manipulation and grasping
+- Multi-agent coordination
+- Adaptive behavior learning
+
+### Key Components of RL in Robotics
+
+- **State (s)**: Robot's current configuration, sensor readings, and environment information
+- **Action (a)**: Motor commands, joint torques, or high-level behaviors
+- **Reward (r)**: Feedback signal indicating task success or failure
+- **Policy (π)**: Strategy for selecting actions based on states
+- **Environment**: The physical world or simulation where the robot operates
+
+## 2. Markov Decision Processes for Robotics
+
+### State Representation
+
+Robotic states often include:
+- Joint positions and velocities
+- End-effector pose and velocity
+- Sensor readings (camera, LIDAR, IMU, etc.)
+- Task-specific information (object positions, goal locations)
+
+```python
+import numpy as np
+
+class RobotState:
+    def __init__(self, joint_positions, joint_velocities,
+                 end_effector_pose, sensor_readings, task_info):
+        self.joint_positions = joint_positions
+        self.joint_velocities = joint_velocities
+        self.end_effector_pose = end_effector_pose  # [x, y, z, qx, qy, qz, qw]
+        self.sensor_readings = sensor_readings
+        self.task_info = task_info  # [goal_x, goal_y, object_pos_x, object_pos_y]
+
+    def to_array(self):
+        """Convert state to a flattened array for neural networks"""
+        return np.concatenate([
+            self.joint_positions,
+            self.joint_velocities,
+            self.end_effector_pose,
+            self.sensor_readings,
+            self.task_info
+        ])
+```
+
+### Action Spaces
+
+Robotic actions can be:
+- **Discrete**: Predefined behaviors (e.g., move forward, turn left)
+- **Continuous**: Joint torques, velocities, or positions
+- **Mixed**: Combination of discrete and continuous actions
+
+```python
+class ActionSpace:
+    def __init__(self, action_type, low=None, high=None, num_actions=None):
+        self.type = action_type  # 'discrete' or 'continuous'
+
+        if action_type == 'continuous':
+            self.low = np.array(low)
+            self.high = np.array(high)
+            self.shape = self.low.shape
+        elif action_type == 'discrete':
+            self.n = num_actions
+```
+
+### Reward Design
+
+Good reward functions are crucial for successful RL in robotics:
+
+```python
+class RobotReward:
+    def __init__(self, task_params):
+        self.task_params = task_params
+
+    def compute_reward(self, state, action, next_state, info):
+        """Compute reward based on task progress"""
+        reward = 0.0
+
+        # Distance to goal reward
+        goal_distance = self.compute_distance_to_goal(next_state)
+        reward += -goal_distance  # Negative distance as reward
+
+        # Success bonus
+        if self.is_task_completed(next_state):
+            reward += self.task_params['success_bonus']
+
+        # Energy penalty
+        energy_cost = np.sum(np.abs(action))
+        reward += -self.task_params['energy_weight'] * energy_cost
+
+        # Safety penalty
+        if self.is_in_safe_zone(next_state):
+            reward += self.task_params['safety_bonus']
+        else:
+            reward += -self.task_params['safety_penalty']
+
+        return reward
+
+    def compute_distance_to_goal(self, state):
+        """Calculate distance to the goal position"""
+        # Implementation depends on specific task
+        pass
+```
+
+## 3. Deep Q-Networks (DQN) for Discrete Actions
+
+### DQN Architecture for Robotics
+
+```python
+import torch
+import torch.nn as nn
+import torch.optim as optim
+import random
+from collections import deque
+
+class DQN(nn.Module):
+    def __init__(self, state_size, action_size, hidden_size=64):
+        super(DQN, self).__init__()
+        self.fc1 = nn.Linear(state_size, hidden_size)
+        self.fc2 = nn.Linear(hidden_size, hidden_size)
+        self.fc3 = nn.Linear(hidden_size, hidden_size)
+        self.fc4 = nn.Linear(hidden_size, action_size)
+
+    def forward(self, x):
+        x = torch.relu(self.fc1(x))
+        x = torch.relu(self.fc2(x))
+        x = torch.relu(self.fc3(x))
+        return self.fc4(x)
+
+class DQNAgent:
+    def __init__(self, state_size, action_size, lr=1e-3):
+        self.state_size = state_size
+        self.action_size = action_size
+        self.memory = deque(maxlen=10000)
+        self.epsilon = 1.0  # exploration rate
+        self.epsilon_min = 0.01
+        self.epsilon_decay = 0.995
+        self.learning_rate = lr
+
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+        # Main and target networks
+        self.q_network = DQN(state_size, action_size).to(self.device)
+        self.target_network = DQN(state_size, action_size).to(self.device)
+        self.optimizer = optim.Adam(self.q_network.parameters(), lr=lr)
+
+        # Update target network
+        self.update_target_network()
+
+    def remember(self, state, action, reward, next_state, done):
+        self.memory.append((state, action, reward, next_state, done))
+
+    def act(self, state):
+        """Choose action using epsilon-greedy policy"""
+        if np.random.random() <= self.epsilon:
+            return random.randrange(self.action_size)
+
+        state_tensor = torch.FloatTensor(state).unsqueeze(0).to(self.device)
+        q_values = self.q_network(state_tensor)
+        return np.argmax(q_values.cpu().data.numpy())
+
+    def replay(self, batch_size=32):
+        """Train the model on a batch of experiences"""
+        if len(self.memory) < batch_size:
+            return
+
+        batch = random.sample(self.memory, batch_size)
+        states = torch.FloatTensor([e[0] for e in batch]).to(self.device)
+        actions = torch.LongTensor([e[1] for e in batch]).to(self.device)
+        rewards = torch.FloatTensor([e[2] for e in batch]).to(self.device)
+        next_states = torch.FloatTensor([e[3] for e in batch]).to(self.device)
+        dones = torch.BoolTensor([e[4] for e in batch]).to(self.device)
+
+        current_q_values = self.q_network(states).gather(1, actions.unsqueeze(1))
+        next_q_values = self.target_network(next_states).max(1)[0].detach()
+        target_q_values = rewards + (0.99 * next_q_values * ~dones)
+
+        loss = nn.MSELoss()(current_q_values.squeeze(), target_q_values)
+
+        self.optimizer.zero_grad()
+        loss.backward()
+        self.optimizer.step()
+
+        if self.epsilon > self.epsilon_min:
+            self.epsilon *= self.epsilon_decay
+
+    def update_target_network(self):
+        self.target_network.load_state_dict(self.q_network.state_dict())
+```
+
+## 4. Policy Gradient Methods for Continuous Control
+
+### Deep Deterministic Policy Gradient (DDPG)
+
+DDPG is well-suited for continuous control tasks in robotics:
+
+```python
+import torch
+import torch.nn as nn
+import numpy as np
+from collections import deque
+import random
+
+class Actor(nn.Module):
+    def __init__(self, state_size, action_size, hidden_size=256):
+        super(Actor, self).__init__()
+        self.fc1 = nn.Linear(state_size, hidden_size)
+        self.fc2 = nn.Linear(hidden_size, hidden_size)
+        self.fc3 = nn.Linear(hidden_size, action_size)
+        self.tanh = nn.Tanh()
+
+    def forward(self, state):
+        x = torch.relu(self.fc1(state))
+        x = torch.relu(self.fc2(x))
+        x = self.tanh(self.fc3(x))  # Actions between -1 and 1
+        return x
+
+class Critic(nn.Module):
+    def __init__(self, state_size, action_size, hidden_size=256):
+        super(Critic, self).__init__()
+        self.fc1 = nn.Linear(state_size + action_size, hidden_size)
+        self.fc2 = nn.Linear(hidden_size, hidden_size)
+        self.fc3 = nn.Linear(hidden_size, 1)
+
+    def forward(self, state, action):
+        x = torch.cat([state, action], dim=1)
+        x = torch.relu(self.fc1(x))
+        x = torch.relu(self.fc2(x))
+        x = self.fc3(x)
+        return x
+
+class DDPGAgent:
+    def __init__(self, state_size, action_size, lr_actor=1e-4, lr_critic=1e-3):
+        self.state_size = state_size
+        self.action_size = action_size
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+        # Actor networks
+        self.actor_local = Actor(state_size, action_size).to(self.device)
+        self.actor_target = Actor(state_size, action_size).to(self.device)
+
+        # Critic networks
+        self.critic_local = Critic(state_size, action_size).to(self.device)
+        self.critic_target = Critic(state_size, action_size).to(self.device)
+
+        # Optimizers
+        self.actor_optimizer = torch.optim.Adam(self.actor_local.parameters(), lr=lr_actor)
+        self.critic_optimizer = torch.optim.Adam(self.critic_local.parameters(), lr=lr_critic)
+
+        # Replay buffer
+        self.memory = deque(maxlen=100000)
+
+        # Noise for exploration
+        self.noise = OUNoise(action_size)
+
+        # Update target networks
+        self.update_targets(tau=1)  # Initialize target networks
+
+    def step(self, state, action, reward, next_state, done):
+        """Save experience and learn"""
+        self.memory.append((state, action, reward, next_state, done))
+
+        if len(self.memory) > 1000:  # Start learning after some experiences
+            experiences = random.sample(self.memory, 64)
+            self.learn(experiences)
+
+    def act(self, state, add_noise=True):
+        """Return action for given state"""
+        state_tensor = torch.FloatTensor(state).unsqueeze(0).to(self.device)
+        self.actor_local.eval()
+        with torch.no_grad():
+            action = self.actor_local(state_tensor).cpu().data.numpy()[0]
+        self.actor_local.train()
+
+        if add_noise:
+            action += self.noise.sample()
+
+        return np.clip(action, -1, 1)
+
+    def learn(self, experiences):
+        """Update policy and value parameters using batch of experience tuples"""
+        states = torch.FloatTensor([e[0] for e in experiences]).to(self.device)
+        actions = torch.FloatTensor([e[1] for e in experiences]).to(self.device)
+        rewards = torch.FloatTensor([e[2] for e in experiences]).to(self.device).unsqueeze(1)
+        next_states = torch.FloatTensor([e[3] for e in experiences]).to(self.device)
+        dones = torch.BoolTensor([e[4] for e in experiences]).to(self.device).unsqueeze(1)
+
+        # Compute Q targets for critic updates
+        next_actions = self.actor_target(next_states)
+        Q_targets_next = self.critic_target(next_states, next_actions)
+        Q_targets = rewards + (0.99 * Q_targets_next * ~dones)
+
+        # Critic loss
+        Q_expected = self.critic_local(states, actions)
+        critic_loss = nn.MSELoss()(Q_expected, Q_targets)
+
+        # Minimize critic loss
+        self.critic_optimizer.zero_grad()
+        critic_loss.backward()
+        self.critic_optimizer.step()
+
+        # Compute actor loss
+        actions_pred = self.actor_local(states)
+        actor_loss = -self.critic_local(states, actions_pred).mean()
+
+        # Minimize actor loss
+        self.actor_optimizer.zero_grad()
+        actor_loss.backward()
+        self.actor_optimizer.step()
+
+        # Update target networks
+        self.update_targets()
+
+    def update_targets(self, tau=1e-3):
+        """Soft update model parameters"""
+        for target_param, local_param in zip(self.actor_target.parameters(),
+                                           self.actor_local.parameters()):
+            target_param.data.copy_(tau * local_param.data + (1.0 - tau) * target_param.data)
+
+        for target_param, local_param in zip(self.critic_target.parameters(),
+                                           self.critic_local.parameters()):
+            target_param.data.copy_(tau * local_param.data + (1.0 - tau) * target_param.data)
+
+class OUNoise:
+    """Ornstein-Uhlenbeck process for exploration noise"""
+    def __init__(self, size, mu=0, theta=0.15, sigma=0.2):
+        self.mu = mu * np.ones(size)
+        self.theta = theta
+        self.sigma = sigma
+        self.reset()
+
+    def reset(self):
+        self.state = copy.copy(self.mu)
+
+    def sample(self):
+        x = self.state
+        dx = self.theta * (self.mu - x) + self.sigma * np.random.randn(len(x))
+        self.state = x + dx
+        return self.state
+```
+
+## 5. Soft Actor-Critic (SAC) for Sample-Efficient Learning
+
+SAC is particularly effective for robotic tasks due to its sample efficiency:
+
+```python
+import torch
+import torch.nn as nn
+import torch.optim as optim
+import torch.nn.functional as F
+from torch.distributions import Normal
+
+class SACActor(nn.Module):
+    def __init__(self, state_size, action_size, hidden_size=256):
+        super(SACActor, self).__init__()
+
+        self.fc1 = nn.Linear(state_size, hidden_size)
+        self.fc2 = nn.Linear(hidden_size, hidden_size)
+
+        self.mean_linear = nn.Linear(hidden_size, action_size)
+        self.log_std_linear = nn.Linear(hidden_size, action_size)
+
+        # Action scaling
+        self.action_scale = torch.FloatTensor([1.0])  # Adjust based on action space
+        self.action_bias = torch.FloatTensor([0.0])
+
+    def forward(self, state):
+        x = F.relu(self.fc1(state))
+        x = F.relu(self.fc2(x))
+
+        mean = self.mean_linear(x)
+        log_std = self.log_std_linear(x)
+        log_std = torch.clamp(log_std, min=-20, max=2)
+
+        return mean, log_std
+
+    def sample(self, state):
+        mean, log_std = self.forward(state)
+        std = log_std.exp()
+
+        normal = Normal(mean, std)
+        x_t = normal.rsample()  # Reparameterization trick
+        y_t = torch.tanh(x_t)
+        action = y_t * self.action_scale + self.action_bias
+
+        # Calculate log probability
+        log_prob = normal.log_prob(x_t)
+        log_prob -= torch.log(self.action_scale * (1 - y_t.pow(2)) + 1e-6)
+        log_prob = log_prob.sum(1, keepdim=True)
+
+        return action, log_prob, mean, std
+
+class SACCritic(nn.Module):
+    def __init__(self, state_size, action_size, hidden_size=256):
+        super(SACCritic, self).__init__()
+
+        # Q1
+        self.linear1 = nn.Linear(state_size + action_size, hidden_size)
+        self.linear2 = nn.Linear(hidden_size, hidden_size)
+        self.linear3 = nn.Linear(hidden_size, 1)
+
+        # Q2
+        self.linear4 = nn.Linear(state_size + action_size, hidden_size)
+        self.linear5 = nn.Linear(hidden_size, hidden_size)
+        self.linear6 = nn.Linear(hidden_size, 1)
+
+    def forward(self, state, action):
+        xu = torch.cat([state, action], 1)
+
+        x1 = F.relu(self.linear1(xu))
+        x1 = F.relu(self.linear2(x1))
+        x1 = self.linear3(x1)
+
+        x2 = F.relu(self.linear4(xu))
+        x2 = F.relu(self.linear5(x2))
+        x2 = self.linear6(x2)
+
+        return x1, x2
+
+class SACAgent:
+    def __init__(self, state_size, action_size, lr=3e-4, alpha=0.2):
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+        self.actor = SACActor(state_size, action_size).to(self.device)
+        self.critic = SACCritic(state_size, action_size).to(self.device)
+        self.critic_target = SACCritic(state_size, action_size).to(self.device)
+
+        # Copy critic parameters to target critic
+        for target_param, param in zip(self.critic_target.parameters(), self.critic.parameters()):
+            target_param.data.copy_(param.data)
+
+        self.actor_optimizer = optim.Adam(self.actor.parameters(), lr=lr)
+        self.critic_optimizer = optim.Adam(self.critic.parameters(), lr=lr)
+
+        self.alpha = alpha  # Temperature parameter
+        self.target_entropy = -torch.prod(torch.Tensor(action_size).to(self.device)).item()
+        self.log_alpha = torch.zeros(1, requires_grad=True, device=self.device)
+        self.alpha_optimizer = optim.Adam([self.log_alpha], lr=lr)
+
+    def update_critic(self, state, action, reward, next_state, done):
+        with torch.no_grad():
+            next_action, next_log_prob, _, _ = self.actor.sample(next_state)
+            q1_next, q2_next = self.critic_target(next_state, next_action)
+            v = torch.min(q1_next, q2_next) - self.alpha * next_log_prob
+            expected_q = reward + (0.99 * v * ~done)
+
+        # Get current Q estimates
+        q1, q2 = self.critic(state, action)
+
+        # Compute critic loss
+        critic_loss = F.mse_loss(q1, expected_q) + F.mse_loss(q2, expected_q)
+
+        # Optimize critic
+        self.critic_optimizer.zero_grad()
+        critic_loss.backward()
+        self.critic_optimizer.step()
+
+    def update_actor(self, state):
+        action, log_prob, _, _ = self.actor.sample(state)
+        q1, q2 = self.critic(state, action)
+        q = torch.min(q1, q2)
+
+        # Compute actor loss
+        actor_loss = (self.alpha * log_prob - q).mean()
+
+        # Optimize actor
+        self.actor_optimizer.zero_grad()
+        actor_loss.backward()
+        self.actor_optimizer.step()
+
+        # Update alpha
+        alpha_loss = -(self.log_alpha * (log_prob + self.target_entropy).detach()).mean()
+        self.alpha_optimizer.zero_grad()
+        alpha_loss.backward()
+        self.alpha_optimizer.step()
+
+        self.alpha = self.log_alpha.exp()
+```
+
+## 6. Imitation Learning and Learning from Demonstrations
+
+### Behavioral Cloning
+
+```python
+import torch
+import torch.nn as nn
+import torch.optim as optim
+
+class ImitationLearner:
+    def __init__(self, state_size, action_size, hidden_size=256):
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+        # Policy network
+        self.policy = nn.Sequential(
+            nn.Linear(state_size, hidden_size),
+            nn.ReLU(),
+            nn.Linear(hidden_size, hidden_size),
+            nn.ReLU(),
+            nn.Linear(hidden_size, action_size),
+            nn.Tanh()  # Actions in [-1, 1]
+        ).to(self.device)
+
+        self.optimizer = optim.Adam(self.policy.parameters(), lr=1e-3)
+        self.criterion = nn.MSELoss()
+
+    def train_step(self, states, actions):
+        """Train on expert demonstrations"""
+        states = torch.FloatTensor(states).to(self.device)
+        actions = torch.FloatTensor(actions).to(self.device)
+
+        # Forward pass
+        predicted_actions = self.policy(states)
+
+        # Compute loss
+        loss = self.criterion(predicted_actions, actions)
+
+        # Backward pass
+        self.optimizer.zero_grad()
+        loss.backward()
+        self.optimizer.step()
+
+        return loss.item()
+
+    def predict(self, state):
+        """Predict action for given state"""
+        state = torch.FloatTensor(state).unsqueeze(0).to(self.device)
+        with torch.no_grad():
+            action = self.policy(state).cpu().numpy()[0]
+        return action
+```
+
+## 7. Safety and Robustness in RL
+
+### Safe RL with Constrained Optimization
+
+```python
+class SafeRLAgent:
+    def __init__(self, state_size, action_size):
+        self.critic = ValueNetwork(state_size)
+        self.actor = PolicyNetwork(state_size, action_size)
+        self.constraint_critic = ValueNetwork(state_size)  # For safety constraints
+
+    def compute_safe_action(self, state):
+        """Compute action that satisfies safety constraints"""
+        # Use constrained optimization to ensure safety
+        action = self.actor(state)
+
+        # Check safety constraint
+        constraint_value = self.constraint_critic(state)
+
+        if constraint_value > self.safety_threshold:
+            # Adjust action to satisfy constraint
+            action = self.project_to_safe_set(action, state)
+
+        return action
+
+    def project_to_safe_set(self, action, state):
+        """Project action to safe set using optimization"""
+        # Implementation depends on specific safety constraints
+        # Could use quadratic programming or other optimization methods
+        pass
+```
+
+## Practical Exercise
+
+Implement a robotic manipulation task using reinforcement learning:
+1. Set up a robotic arm simulation environment
+2. Implement a DDPG agent for continuous control
+3. Design a reward function for reaching and grasping objects
+4. Train the agent to perform the manipulation task
+5. Evaluate the learned policy in simulation
+
+### Requirements
+- Simulation environment (Gazebo, Isaac Sim, or PyBullet)
+- Understanding of RL concepts from previous week
+- Python with PyTorch or TensorFlow
+
+### Expected Outcome
+A trained RL agent that can perform a robotic manipulation task using continuous control.
+
+## Summary
+
+This week covered reinforcement learning techniques for robotics, including DQN for discrete actions, DDPG and SAC for continuous control, and imitation learning approaches. You learned about reward design, policy gradient methods, and safety considerations in RL for robotics. These techniques enable robots to learn complex behaviors through interaction with their environment, which is essential for autonomous robotic systems. Next week, we'll explore sim-to-real transfer techniques and real-world deployment challenges.
