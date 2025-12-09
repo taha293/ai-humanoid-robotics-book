@@ -5,7 +5,9 @@
       "Bash(pwsh -File .specify/scripts/powershell/setup-plan.ps1 -Json)",
       "Bash(git rev-parse --git-dir)",
       "Bash(npm start)",
-      "Bash(npm run build)"
+      "Bash(npm run build)",
+      "Bash(git remote add origin https://github.com/taha293/ai-humanoid-robotics-book.git)",
+      "Bash(git push -u origin master)"
     ]
   }
 }
