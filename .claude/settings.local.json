@@ -7,7 +7,12 @@
       "Bash(npm start)",
       "Bash(npm run build)",
       "Bash(git remote add origin https://github.com/taha293/ai-humanoid-robotics-book.git)",
-      "Bash(git push -u origin master)"
+      "Bash(git push -u origin master)",
+      "Bash(git add docusaurus.config.js)",
+      "Bash(git commit -m \"Fix GitHub Pages URL configuration\n\n- Update production URL to https://taha293.github.io for proper GitHub Pages deployment\n- This ensures the site is correctly configured for GitHub Pages at https://taha293.github.io/ai-humanoid-robotics-book/\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\")",
+      "Bash(git commit -m \"Remove duplicate publish.yml workflow file\n\n- Keep only jekyll-gh-pages.yml for GitHub Pages deployment\n- This workflow correctly builds and deploys the Docusaurus site\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\")",
+      "Bash(git checkout main)",
+      "Bash(rm .github/workflows/publish.yml)"
     ]
   }
 }
