@@ -193,8 +193,8 @@ function StatsSection() {
           {stats.map((stat, index) => (
             <div key={index} className="col col--3">
               <div className="padding-horiz--md">
-                <h3 style={{fontSize: '2.5rem', color: '#2e8555', margin: 0}}>{stat.value}</h3>
-                <p style={{margin: 0}}>{stat.label}</p>
+                <h3 className={styles.statValue}>{stat.value}</h3>
+                <p className={styles.statLabel}>{stat.label}</p>
               </div>
             </div>
           ))}

@@ -51,6 +51,11 @@
   color: var(--ifm-color-content) !important;
 }
 
+/* Stats section background in dark mode */
+[data-theme='dark'] .stats {
+  background-color: var(--ifm-background-color) !important;
+}
+
 /* Dark mode fixes for cards and sections */
 [data-theme='dark'] .interactive-card {
   background-color: var(--ifm-background-surface-color) !important;
