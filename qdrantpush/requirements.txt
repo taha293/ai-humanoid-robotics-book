@@ -1,0 +1,4 @@
+qdrant-client
+fastembed
+langchain-text-splitters
+python-dotenv
