@@ -1,0 +1,128 @@
+openapi: 3.0.0
+info:
+  title: AI-Powered Question Answering System for Docusaurus Book
+  description: API for asking questions about the Docusaurus book content and receiving AI-generated answers
+  version: 1.0.0
+servers:
+  - url: http://localhost:8000
+    description: Development server
+  - url: https://api.example.com
+    description: Production server
+
+paths:
+  /ask:
+    post:
+      summary: Ask a question about the book content
+      description: Submit a question about the book content and receive an AI-generated answer based on the book's information
+      operationId: askQuestion
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Question'
+            example:
+              query: "What are the key principles of RAG systems?"
+              context: "I'm studying AI architectures"
+      responses:
+        '200':
+          description: Successful response with AI-generated answer
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+              example:
+                answer: "RAG (Retrieval-Augmented Generation) systems combine information retrieval with text generation. Key principles include: 1) Retrieval component that finds relevant documents, 2) Generation component that creates responses using retrieved context, 3) Grounding responses in retrieved content to avoid hallucination."
+                sources:
+                  - section: "RAG Fundamentals"
+                    content: "RAG systems combine retrieval and generation components to provide grounded responses based on source documents."
+                    relevance_score: 0.95
+                question: "What are the key principles of RAG systems?"
+        '400':
+          description: Bad request - invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    Question:
+      type: object
+      required:
+        - query
+      properties:
+        query:
+          type: string
+          description: The user's question about the book content
+          example: "How does vector search work in RAG systems?"
+          minLength: 1
+          maxLength: 1000
+        context:
+          type: string
+          description: Additional context for the question (optional)
+          example: "I'm studying for my AI exam"
+          maxLength: 500
+
+    Response:
+      type: object
+      required:
+        - answer
+      properties:
+        answer:
+          type: string
+          description: The AI-generated answer based on book content
+          example: "Vector search in RAG systems works by converting text to high-dimensional vectors and finding similar vectors using distance metrics like cosine similarity."
+        sources:
+          type: array
+          description: References to book sections used in generating the answer
+          items:
+            $ref: '#/components/schemas/Source'
+        question:
+          type: string
+          description: Echo of the original question
+          example: "How does vector search work in RAG systems?"
+        timestamp:
+          type: string
+          format: date-time
+          description: When the response was generated
+          example: "2025-12-19T15:30:00Z"
+
+    Source:
+      type: object
+      properties:
+        section:
+          type: string
+          description: Name or identifier of the book section
+          example: "Vector Search Mechanisms"
+        content:
+          type: string
+          description: Snippet of the content used
+          example: "Vector search converts text to embeddings and uses distance metrics to find similar content."
+        relevance_score:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          description: Confidence score of relevance
+          example: 0.87
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          description: Error message
+          example: "Invalid input: query cannot be empty"
+        code:
+          type: string
+          description: Error code
+          example: "INVALID_INPUT"

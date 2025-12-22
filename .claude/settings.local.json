@@ -19,7 +19,12 @@
       "Bash(pwsh -File .specify/scripts/powershell/check-prerequisites.ps1 -Json)",
       "Bash(.specify/scripts/bash/check-prerequisites.sh)",
       "Bash(find specs/002-qdrant-doc-upload -name \"*.md\" -exec grep -l \"\\\\[ \\\\]\" {} ;)",
-      "Bash(pip install -r qdrantpush/requirements.txt)"
+      "Bash(pip install -r qdrantpush/requirements.txt)",
+      "Bash(.specify/scripts/powershell/setup-plan.ps1 -Json)",
+      "mcp__context7__get-library-docs",
+      "Bash(ls -la specs/003-rag-ai-backend/*.md)",
+      "Bash(.specify/scripts/powershell/check-prerequisites.ps1 -Json -RequireTasks -IncludeTasks)",
+      "Bash(git add .)"
     ]
   }
 }
