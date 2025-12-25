@@ -3,7 +3,7 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches:
-      - 004-docusaurus-chatbot
+      - main
   workflow_dispatch:
 
 permissions:
