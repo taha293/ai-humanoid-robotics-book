@@ -8,6 +8,7 @@ from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
@@ -23,6 +24,15 @@ app = FastAPI(
     title="AI-Powered Question Answering System",
     description="A RAG-based system that answers questions about Physical AI and Humanoid Robotics book content using Qdrant and Gemini",
     version="1.0.0"
+)
+
+# Add CORS middleware to allow frontend communication
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, specify exact origins
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Request/Response models based on data model

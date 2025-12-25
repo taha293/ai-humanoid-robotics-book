@@ -24,7 +24,11 @@
       "mcp__context7__get-library-docs",
       "Bash(ls -la specs/003-rag-ai-backend/*.md)",
       "Bash(.specify/scripts/powershell/check-prerequisites.ps1 -Json -RequireTasks -IncludeTasks)",
-      "Bash(git add .)"
+      "Bash(git add .)",
+      "Bash(mkdir -p specs/004-docusaurus-chatbot)",
+      "Bash(.specify/scripts/powershell/check-prerequisites.ps1 -Json)",
+      "Bash(npm install axios)",
+      "Bash(find backend -name \"*.py\" -exec grep -l \"fastapiAi\\\\|ai\" {} ;)"
     ]
   }
 }
