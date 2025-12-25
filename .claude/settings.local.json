@@ -12,7 +12,23 @@
       "Bash(git commit -m \"Fix GitHub Pages URL configuration\n\n- Update production URL to https://taha293.github.io for proper GitHub Pages deployment\n- This ensures the site is correctly configured for GitHub Pages at https://taha293.github.io/ai-humanoid-robotics-book/\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\")",
       "Bash(git commit -m \"Remove duplicate publish.yml workflow file\n\n- Keep only jekyll-gh-pages.yml for GitHub Pages deployment\n- This workflow correctly builds and deploys the Docusaurus site\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\")",
       "Bash(git checkout main)",
-      "Bash(rm .github/workflows/publish.yml)"
+      "Bash(rm .github/workflows/publish.yml)",
+      "Bash(ls -d specs/*/)",
+      "Bash(mkdir -p specs/1-qdrant-doc-upload)",
+      "mcp__context7__resolve-library-id",
+      "Bash(pwsh -File .specify/scripts/powershell/check-prerequisites.ps1 -Json)",
+      "Bash(.specify/scripts/bash/check-prerequisites.sh)",
+      "Bash(find specs/002-qdrant-doc-upload -name \"*.md\" -exec grep -l \"\\\\[ \\\\]\" {} ;)",
+      "Bash(pip install -r qdrantpush/requirements.txt)",
+      "Bash(.specify/scripts/powershell/setup-plan.ps1 -Json)",
+      "mcp__context7__get-library-docs",
+      "Bash(ls -la specs/003-rag-ai-backend/*.md)",
+      "Bash(.specify/scripts/powershell/check-prerequisites.ps1 -Json -RequireTasks -IncludeTasks)",
+      "Bash(git add .)",
+      "Bash(mkdir -p specs/004-docusaurus-chatbot)",
+      "Bash(.specify/scripts/powershell/check-prerequisites.ps1 -Json)",
+      "Bash(npm install axios)",
+      "Bash(find backend -name \"*.py\" -exec grep -l \"fastapiAi\\\\|ai\" {} ;)"
     ]
   }
 }

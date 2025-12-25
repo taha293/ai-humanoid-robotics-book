@@ -62,6 +62,13 @@ const config = {
     ],
   ],
 
+  themes: [
+    // ... your other themes
+  ],
+  customFields: {
+    // Pass the API URL from environment variables to the client side
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000',
+  },
   themeConfig:
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     ({
