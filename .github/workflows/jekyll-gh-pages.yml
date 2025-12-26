@@ -33,6 +33,9 @@ jobs:
         run: npm ci
       - name: Build
         run: npm run build
+        env:
+          # This pulls the secret you just created into the build process
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
       # 👆 Build steps
       - name: Setup Pages
         uses: actions/configure-pages@v4
