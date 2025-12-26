@@ -10,5 +10,5 @@ const getDocusaurusConfig = () => {
 // Get the API URL from Docusaurus config
 export const getApiUrl = () => {
   const config = getDocusaurusConfig();
-  return config.customFields?.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+  return config.customFields?.NEXT_PUBLIC_API_URL || 'https://taha293-hackathon1.hf.space';
 };

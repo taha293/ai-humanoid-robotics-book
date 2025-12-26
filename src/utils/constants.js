@@ -1,6 +1,6 @@
 // Constants for API configuration
 export const API_CONFIG = {
-  BASE_URL: 'http://localhost:8000', // Will be overridden in apiService with env var
+  BASE_URL: 'https://taha293-hackathon1.hf.space', // Will be overridden in apiService with env var
   ENDPOINTS: {
     ASK: '/ask',
   },
